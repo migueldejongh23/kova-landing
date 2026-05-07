@@ -1408,8 +1408,7 @@ function ServiceCard({pill, title, body, viz, vizMobile, expandedContent, large,
       <h3 className={`display-serif tracking-[-0.02em] text-[var(--bone)] ${large?"text-[34px] lg:text-[40px]":"text-[26px] lg:text-[28px]"}`}>
         {title}
       </h3>
-      <div className="mt-6 hidden xl:block">{viz}</div>
-      {vizMobile && <div className="mt-6 block xl:hidden">{vizMobile}</div>}
+      {(vizMobile || viz) && <div className="mt-6">{vizMobile ?? viz}</div>}
       <p className="mt-6 text-[14.5px] leading-[1.55] text-[var(--mute-2)] max-w-xl">{body}</p>
 
       {alwaysOpen ? (
@@ -1603,29 +1602,13 @@ function Services() {
           </p>
         </div>
 
-        {/* Mobile: single column */}
-        <div className="flex flex-col gap-5 xl:hidden">
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(100%, 360px), 1fr))", gap:"20px"}}>
           <ServiceCard pill="01 · Omnichannel ordering" title={<>Orders from <span className="serif-it">any channel</span>, on one screen.</>} viz={<VizOrderFlow/>} vizMobile={<VizOrderFlowMobile/>} body="A central hub that takes orders from web, kiosks, WhatsApp, Instagram, Google or phone and routes them straight to your kitchen or team. No paper tickets, no missed orders, no replying to DMs at 11pm." expandedContent={<OrdersDetail/>}/>
           <ServiceCard pill="02 · Websites" alwaysOpen title="Sites that sell, not decorate." viz={<VizWeb/>} vizMobile={<VizWebMobile/>} body="Restrained design, fast loads, and one clear path to conversion — book, buy, or schedule. Easy CMS so you stay in control after launch." expandedContent={<WebDetail/>}/>
           <ServiceCard pill="03 · AI Receptionist" title="WhatsApp, IG, mail and reviews — answered." viz={<VizReceptionist/>} vizMobile={<VizReceptionistMobile/>} body="An AI trained on your menu, hours and policies. Books, replies, hands off the important ones, and never sleeps." expandedContent={<ReceptionistDetail/>}/>
           <ServiceCard pill="04 · Smart inventory" title="Know what's missing before it's missing." viz={<VizInventory/>} vizMobile={<VizInventoryMobile/>} body="Stock tracking with alerts and auto-orders to your suppliers. UI built so anyone on staff can use it in 10 seconds." expandedContent={<InventoryDetail/>}/>
           <ServiceCard pill="05 · Self-order kiosk" title="Customers build their own order." viz={<VizTotem/>} vizMobile={<VizTotemMobile/>} body="Touchscreen kiosk tailored to your menu and brand. Cuts queues, raises ticket size, frees your team to actually serve." expandedContent={<TotemDetail/>}/>
           <ServiceCard pill="06 · Lead scoring" title="Know who to call back first." viz={<VizLeadScoring/>} vizMobile={<VizLeadScoringMobile/>} body="Every message across WhatsApp, IG and email lands in one inbox, scored by urgency and value. Your team focuses on the ones that actually convert."/>
-        </div>
-
-        {/* Desktop: beam layout */}
-        <div className="hidden xl:grid gap-6" style={{gridTemplateColumns:"1fr clamp(60px,8vw,160px) 1fr"}}>
-          <div style={{display:"grid",gridTemplateRows:"repeat(3,1fr)",gap:"20px"}}>
-            <ServiceCard pill="01 · Omnichannel ordering" title={<>Orders from <span className="serif-it">any channel</span>, on one screen.</>} viz={<VizOrderFlow/>} body="A central hub that takes orders from web, kiosks, WhatsApp, Instagram, Google or phone and routes them straight to your kitchen or team. No paper tickets, no missed orders, no replying to DMs at 11pm." expandedContent={<OrdersDetail/>}/>
-            <ServiceCard pill="02 · Websites" alwaysOpen title="Sites that sell, not decorate." viz={<VizWeb/>} body="Restrained design, fast loads, and one clear path to conversion — book, buy, or schedule. Easy CMS so you stay in control after launch." expandedContent={<WebDetail/>}/>
-            <ServiceCard pill="05 · Self-order kiosk" title="Customers build their own order." viz={<VizTotem/>} body="Touchscreen kiosk tailored to your menu and brand. Cuts queues, raises ticket size, frees your team to actually serve." expandedContent={<TotemDetail/>}/>
-          </div>
-          <div/>
-          <div style={{display:"grid",gridTemplateRows:"repeat(3,1fr)",gap:"20px"}}>
-            <ServiceCard pill="03 · AI Receptionist" title="WhatsApp, IG, mail and reviews — answered." viz={<VizReceptionist/>} body="An AI trained on your menu, hours and policies. Books, replies, hands off the important ones, and never sleeps." expandedContent={<ReceptionistDetail/>}/>
-            <ServiceCard pill="04 · Smart inventory" title="Know what's missing before it's missing." viz={<VizInventory/>} body="Stock tracking with alerts and auto-orders to your suppliers. UI built so anyone on staff can use it in 10 seconds." expandedContent={<InventoryDetail/>}/>
-            <ServiceCard pill="06 · Lead scoring" title="Know who to call back first." viz={<VizLeadScoring/>} body="Every message across WhatsApp, IG and email lands in one inbox, scored by urgency and value. Your team focuses on the ones that actually convert."/>
-          </div>
         </div>
       </div>
     </section>
@@ -1710,26 +1693,13 @@ function Metrics() {
   return (
     <section data-screen-label="03 Outcomes" className="relative px-8 lg:px-12 pt-12 pb-12">
       <div className="relative">
-        {/* Mobile: single column */}
-        <div className="flex flex-col gap-5 xl:hidden">
+        <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(100%, 360px), 1fr))", gap:"20px"}}>
           <MetricCard pill="Time recovered" value="11" unit="h/wk" viz="per venue · avg" highlight equiv="$ 1,760 / mo in recovered labor" body="Weekly hours the owner stops spending taking orders, replying to messages and counting stock manually."/>
           <MetricCard pill="Response time" prefix="<" value="30" unit="s" viz="AI · 24/7" equiv="vs. 4–6h avg without AI" body="The AI receptionist replies in under 30 seconds across every channel — even at 3am."/>
           <MetricCard pill="Average ticket" prefix="+" value="22" unit="%" viz="vs. counter order" equiv="$ 4,800 / mo extra in a typical venue" body="Average ticket lift when customers self-order on the kiosk or web vs. ordering at the counter."/>
           <MetricCard pill="Call coverage" value="100" unit="%" viz="AI · calls handled" equiv="0 missed calls — in English & Spanish" body="The AI Receptionist picks up every call, 24/7, in English and Spanish. No voicemail, no missed bookings."/>
-          <ContactCard/>
         </div>
-
-        {/* Desktop: beam layout */}
-        <div className="hidden xl:grid gap-6" style={{gridTemplateColumns:"1fr clamp(60px,8vw,160px) 1fr"}}>
-          <div className="grid grid-cols-2 gap-5">
-            <MetricCard pill="Time recovered" value="11" unit="h/wk" viz="per venue · avg" highlight equiv="$ 1,760 / mo in recovered labor" body="Weekly hours the owner stops spending taking orders, replying to messages and counting stock manually."/>
-            <MetricCard pill="Response time" prefix="<" value="30" unit="s" viz="AI · 24/7" equiv="vs. 4–6h avg without AI" body="The AI receptionist replies in under 30 seconds across every channel — even at 3am."/>
-            <MetricCard pill="Average ticket" prefix="+" value="22" unit="%" viz="vs. counter order" equiv="$ 4,800 / mo extra in a typical venue" body="Average ticket lift when customers self-order on the kiosk or web vs. ordering at the counter."/>
-            <MetricCard pill="Call coverage" value="100" unit="%" viz="AI · calls handled" equiv="0 missed calls — in English & Spanish" body="The AI Receptionist picks up every call, 24/7, in English and Spanish. No voicemail, no missed bookings."/>
-          </div>
-          <div/>
-          <ContactCard/>
-        </div>
+        <div className="mt-5"><ContactCard/></div>
       </div>
       <div className="flex items-center justify-between mt-7 px-2 text-[12px] text-[var(--mute)]">
         <span>© 2026 Kova — Intelligent systems for modern businesses.</span>
