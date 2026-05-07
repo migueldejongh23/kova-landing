@@ -494,7 +494,7 @@ void main(){
 <script type="text/babel" data-presets="env,react">
 const { useState, useEffect, useRef, useCallback } = React;
 
-function useWide(bp = 1400) {
+function useWide(bp = 1200) {
   const [wide, setWide] = useState(() => window.innerWidth >= bp);
   useEffect(() => {
     const fn = () => setWide(window.innerWidth >= bp);
