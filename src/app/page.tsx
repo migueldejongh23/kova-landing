@@ -17,8 +17,8 @@ export default function Home() {
       const card = target.closest && target.closest(".surface") as HTMLElement;
       if (!card) return;
       const r = card.getBoundingClientRect();
-      card.style.setProperty("--mx", `\${e.clientX - r.left}px`);
-      card.style.setProperty("--my", `\${e.clientY - r.top}px`);
+      card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      card.style.setProperty("--my", `${e.clientY - r.top}px`);
     }
     document.addEventListener("mousemove", onMove);
     return () => document.removeEventListener("mousemove", onMove);
@@ -35,7 +35,7 @@ export default function Home() {
       </div>
       <div className="beam-canvas" aria-hidden><EnergyBeam/></div>
       
-      <div className="relative flex flex-col" style={{zIndex: 2}}>
+      <div className="flex flex-col" style={{zIndex: 2}}>
         <Topbar/>
         <Hero/>
         <TrustBadges/>
