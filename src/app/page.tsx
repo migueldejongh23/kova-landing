@@ -24,6 +24,13 @@ export default function Home() {
     return () => document.removeEventListener("mousemove", onMove);
   }, []);
 
+  const handleExploreDetailsClick = () => {
+    window.scrollTo({
+      top: document.getElementById('pricing')?.offsetTop || 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <main className="relative min-h-screen text-[var(--bone)]">
       <div className="ambient-bg" aria-hidden></div>
@@ -37,10 +44,10 @@ export default function Home() {
       
       <div className="flex flex-col" style={{zIndex: 2}}>
         <Topbar/>
-        <Hero/>
+        <Hero onExploreDetailsClick={handleExploreDetailsClick}/>
         <TrustBadges/>
         <Services/>
-        <Pricing/>
+        <Pricing id="pricing"/>
         <Testimonials/>
         <AboutMe/>
         <Metrics/>
