@@ -107,8 +107,9 @@
   /* ----- Surfaces ----- */
   .surface {
     position: relative;
+    --card-accent: oklch(0.72 0.22 285);
     background:
-      radial-gradient(120% 80% at 50% -10%, rgba(180,170,255,0.05) 0%, rgba(180,170,255,0) 55%),
+      radial-gradient(120% 80% at 50% -10%, color-mix(in oklch, var(--card-accent) 8%, transparent) 0%, transparent 55%),
       linear-gradient(180deg, rgba(255,255,255,0.018) 0%, rgba(255,255,255,0.005) 100%);
     border: 1px solid rgba(180,170,255,0.10);
     border-radius: 28px;
@@ -327,13 +328,55 @@
   /* spotlight that follows cursor (set --mx/--my via JS) */
   .surface::after {
     content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-    background: radial-gradient(180px 180px at var(--mx, 50%) var(--my, 50%), oklch(0.72 0.22 285 / 0.10), transparent 70%);
+    background: radial-gradient(180px 180px at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--card-accent) 18%, transparent), transparent 70%);
     opacity: 0;
     transition: opacity 0.4s ease;
     z-index: 0;
   }
   .surface:hover::after { opacity: 1; }
   .surface > * { position: relative; z-index: 1; }
+
+  /* Viz frame chrome — inner highlight + soft shadow */
+  .viz-frame {
+    border: 1px solid rgba(180,170,255,0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -1px 0 rgba(0,0,0,0.25),
+      0 4px 18px -6px rgba(0,0,0,0.4);
+  }
+
+  /* Ghost numeral watermark in card top-right */
+  .ghost-num {
+    position: absolute;
+    top: -14px;
+    right: 10px;
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: clamp(96px, 13vw, 188px);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    color: var(--card-accent);
+    opacity: 0.10;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+  /* Spec line below pill row */
+  .card-spec {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .card-spec > span { display: inline-flex; align-items: center; gap: 6px; }
+  .card-spec .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--card-accent); opacity: 0.7; }
 
   /* Eyebrow labels: color shift on hover of parent card */
   .eyebrow {
@@ -593,8 +636,12 @@ function Topbar() {
     <header className="relative z-30 flex items-center justify-between px-8 lg:px-12 h-16">
       <Wordmark />
       <nav className="hidden md:flex items-center gap-1 p-1 rounded-full border border-white/10 bg-white/[0.02] backdrop-blur">
-        {["Services","Process","Work","Studio"].map(l => (
-          <a key={l} href="#" className="nav-link px-4 py-1.5 text-[13px] text-[var(--mute-2)] hover:text-[var(--bone)] rounded-full transition-colors">{l}</a>
+        {[
+          ["Services", "#services"],
+          ["Outcomes", "#outcomes"],
+          ["Contact",  "#contact"],
+        ].map(([l, h]) => (
+          <a key={l} href={h} className="nav-link px-4 py-1.5 text-[13px] text-[var(--mute-2)] hover:text-[var(--bone)] rounded-full transition-colors">{l}</a>
         ))}
       </nav>
       <div className="flex items-center gap-3">
@@ -619,22 +666,22 @@ function Hero() {
           <div className="flex flex-wrap items-center gap-2.5 mb-9">
             <span className="pill pill-violet">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
-              Intelligent systems for modern businesses
+              Software studio · Est. 2026
             </span>
-            <span className="pill">Independent studio · Est. 2017</span>
+            <span className="pill">Mid-market &amp; scale-ups</span>
           </div>
 
           <h1 className="display-serif text-[clamp(36px,8.6vw,140px)] text-[var(--bone)]">
-            Your business,<br/>
-            <span className="serif-it" style={{color:"oklch(0.85 0.16 285)"}}>running itself</span>.
+            Software the way<br/>
+            your business <span className="serif-it" style={{color:"oklch(0.85 0.16 285)"}}>actually works</span>.
           </h1>
 
           <div className="mt-12 grid grid-cols-12 gap-8 items-end">
             <p className={`${mid ? 'col-span-7' : 'col-span-12'} text-[16px] leading-[1.55] text-[var(--mute-2)] max-w-lg`}>
-              We design websites and build the systems that live behind them —
-              AI receptionists, self-order kiosks, inventory automation, and
-              messaging bots that book, reply, charge and report
-              <span className="serif-it text-[var(--bone)]"> without you in the loop</span>.
+              We design and engineer the internal tools, management systems and custom
+              automations that mid-market companies build when off-the-shelf software stops
+              fitting — from AR aging reconciliation to bespoke ERPs to integrations
+              <span className="serif-it text-[var(--bone)]"> nobody else will touch</span>.
             </p>
             <div className={`${mid ? 'col-span-5 items-end' : 'col-span-12 items-start'} flex flex-col gap-4`}>
               <a href="#contact" className="violet-btn">
@@ -650,16 +697,20 @@ function Hero() {
         </div>
 
         <aside className={mid ? 'col-span-4' : 'col-span-12'}>
-          <article className="surface p-7">
+          <article className="surface p-7"
+                   style={{
+                     borderColor: "rgba(139,125,255,0.16)",
+                     boxShadow: "0 14px 40px -16px rgba(139,125,255,0.18)"
+                   }}>
             <div className="flex items-center justify-between mb-5">
-              <span className="pill">Engagement</span>
               <span className="pill pill-violet">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)]"></span>
-                Active · Q3 2026
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
+                Studio status
               </span>
+              <span className="text-[10.5px] tracking-[0.16em] uppercase text-[var(--mute)] font-mono">Updated today</span>
             </div>
             <h3 className="text-[22px] tracking-[-0.02em] mb-5 text-[var(--bone)]">
-              Independent studio. <span className="serif-it text-[var(--mute-2)]">A few clients</span> at a time.
+              Senior team. <span className="serif-it text-[var(--mute-2)]">A few projects</span> at a time.
             </h3>
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -673,7 +724,7 @@ function Hero() {
             <div className="mt-6 grid grid-cols-2 gap-5 pt-5 border-t border-white/10">
               <div>
                 <div className="eyebrow text-[11px] tracking-[0.16em] uppercase text-[var(--mute)] font-mono mb-1.5 inline-block">Cadence</div>
-                <div className="text-[14px] text-[var(--bone)]">3–10 weeks</div>
+                <div className="text-[14px] text-[var(--bone)]">6–12 weeks</div>
               </div>
               <div>
                 <div className="eyebrow text-[11px] tracking-[0.16em] uppercase text-[var(--mute)] font-mono mb-1.5 inline-block">Next start</div>
@@ -691,22 +742,22 @@ function Hero() {
 
 function VizOrderFlow() {
   const channels = [
-    {label:"Web",       y: 28,  color:"oklch(0.85 0.16 285)"},
-    {label:"Kiosk",     y: 78,  color:"oklch(0.78 0.18 260)"},
-    {label:"WhatsApp",  y: 128, color:"oklch(0.80 0.18 200)"},
-    {label:"Instagram", y: 178, color:"oklch(0.78 0.18 320)"},
+    {label:"Excel",    y: 28,  color:"oklch(0.85 0.16 285)"},
+    {label:"Email",    y: 78,  color:"oklch(0.78 0.18 260)"},
+    {label:"Forms",    y: 128, color:"oklch(0.80 0.18 200)"},
+    {label:"Webhooks", y: 178, color:"oklch(0.78 0.18 320)"},
   ];
   const outputs = [
-    {label:"→ Kitchen KDS",  y: 50,  delay:"0s"},
-    {label:"→ POS / Stripe", y: 110, delay:"0.6s"},
-    {label:"→ Inventory",    y: 170, delay:"1.2s"},
+    {label:"→ Reports",  y: 50,  delay:"0s"},
+    {label:"→ Database", y: 110, delay:"0.6s"},
+    {label:"→ Slack",    y: 170, delay:"1.2s"},
   ];
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/220", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
+    <div className="viz-frame relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/240", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="absolute top-4 left-5 right-5 flex items-center justify-between z-10">
-        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Live order routing</span>
+        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Process pipeline · live</span>
         <div className="flex items-center gap-3">
-          <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">14 today · <span className="counter-tick" style={{color:"oklch(0.85 0.16 285)"}}>$ 487.30</span></span>
+          <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">1,420 today · <span className="counter-tick" style={{color:"oklch(0.85 0.16 285)"}}>99.97%</span></span>
           <span className="pill pill-violet !text-[11px]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
             Live
@@ -783,15 +834,15 @@ function VizOrderFlow() {
 
 function VizOrderFlowMobile() {
   const channels = [
-    {label:"Web",       color:"oklch(0.85 0.16 285)"},
-    {label:"WhatsApp",  color:"oklch(0.80 0.18 145)"},
-    {label:"Instagram", color:"oklch(0.78 0.18 320)"},
-    {label:"Kiosk",     color:"oklch(0.78 0.18 260)"},
+    {label:"Excel",    color:"oklch(0.85 0.16 285)"},
+    {label:"Email",    color:"oklch(0.80 0.18 145)"},
+    {label:"Forms",    color:"oklch(0.78 0.18 320)"},
+    {label:"Webhooks", color:"oklch(0.78 0.18 260)"},
   ];
   return (
     <div className="w-full rounded-2xl overflow-hidden" style={{background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Live order routing</span>
+        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Process pipeline · live</span>
         <span className="pill pill-violet !text-[11px]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>Live
         </span>
@@ -807,18 +858,18 @@ function VizOrderFlowMobile() {
           ))}
         </div>
         <div className="flex flex-col items-center my-3 gap-1.5">
-          <div className="text-[13px] font-mono text-[var(--mute)]">↓ orders routed</div>
+          <div className="text-[13px] font-mono text-[var(--mute)]">↓ events routed</div>
           <div className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-mono uppercase tracking-[0.15em] text-[var(--mute)]">KOVA Core</div>
-              <div className="text-[16px] font-mono text-[var(--bone)] mt-0.5">4 active orders</div>
+              <div className="text-[16px] font-mono text-[var(--bone)] mt-0.5">4 active flows</div>
             </div>
-            <div className="text-[12px] font-mono tnum" style={{color:"oklch(0.85 0.16 285)"}}>$ 487.30</div>
+            <div className="text-[12px] font-mono tnum" style={{color:"oklch(0.85 0.16 285)"}}>1,420 today</div>
           </div>
           <div className="text-[13px] font-mono text-[var(--mute)]">↓ dispatched to</div>
         </div>
         <div className="flex gap-2">
-          {["→ Kitchen KDS","→ POS · Stripe","→ Inventory"].map(o => (
+          {["→ Reports","→ Database","→ Slack"].map(o => (
             <div key={o} className="flex-1 text-center px-2 py-1.5 rounded-lg border border-white/10 bg-white/[0.02] text-[11px] font-mono text-[var(--mute-2)]">{o}</div>
           ))}
         </div>
@@ -829,7 +880,7 @@ function VizOrderFlowMobile() {
 
 function VizWeb() {
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/176", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
+    <div className="viz-frame relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/240", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       {/* browser frame */}
       <div className="absolute inset-3 rounded-xl border border-white/10 bg-black/20 overflow-hidden flex">
         {/* mock site */}
@@ -838,15 +889,15 @@ function VizWeb() {
             <span className="w-1.5 h-1.5 rounded-full bg-white/15"></span>
             <span className="w-1.5 h-1.5 rounded-full bg-white/15"></span>
             <span className="w-1.5 h-1.5 rounded-full bg-white/15"></span>
-            <span className="ml-2 text-[13px] font-mono text-[var(--mute)]">your-restaurant.com</span>
+            <span className="ml-2 text-[13px] font-mono text-[var(--mute)]">app.acme-corp.com</span>
           </div>
           <div className="absolute inset-x-0 top-6 bottom-0 overflow-hidden">
             <div className="page-scroll">
               {/* "page" — stacked sections */}
               <div className="h-24 flex items-center justify-center" style={{background:"linear-gradient(135deg, oklch(0.55 0.20 285 / 0.25), oklch(0.45 0.18 240 / 0.10))"}}>
                 <div className="text-center">
-                  <div className="text-[13px] font-mono text-[var(--mute-2)] mb-1">EST. 2017</div>
-                  <div className="text-[14px] tracking-[-0.02em] text-[var(--bone)]" style={{fontFamily:"Instrument Serif, serif"}}>Casa del Mar</div>
+                  <div className="text-[13px] font-mono text-[var(--mute-2)] mb-1">INTERNAL · Q3</div>
+                  <div className="text-[14px] tracking-[-0.02em] text-[var(--bone)]" style={{fontFamily:"Instrument Serif, serif"}}>Operations Dashboard</div>
                 </div>
               </div>
               <div className="h-20 px-4 py-3 grid grid-cols-3 gap-2">
@@ -860,7 +911,7 @@ function VizWeb() {
                 <div className="h-2 rounded-full bg-white/10 w-2/3"></div>
               </div>
               <div className="h-20 px-4 py-3 flex items-center justify-center">
-                <div className="px-3 py-1.5 rounded-full text-[13px] font-mono" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Reserve a table →</div>
+                <div className="px-3 py-1.5 rounded-full text-[13px] font-mono" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Open dashboard →</div>
               </div>
             </div>
           </div>
@@ -915,7 +966,7 @@ function VizWebMobile() {
           </div>
           <div className="pt-2 border-t border-white/10 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-white/25"></span>
-            <span className="text-[12px] font-mono text-[var(--mute)]">your-restaurant.com</span>
+            <span className="text-[12px] font-mono text-[var(--mute)]">app.acme-corp.com</span>
           </div>
         </div>
       </div>
@@ -925,18 +976,18 @@ function VizWebMobile() {
 
 function VizReceptionist() {
   const inbox = [
-    {ch:"IG",  pre:"@laura.m",     msg:"Table for 4 tomorrow at 8pm?", t:"2s",  hot:true},
-    {ch:"WA",  pre:"+1 555 12...", msg:"Cancel Thursday reservation",  t:"8s"},
-    {ch:"✉",  pre:"events@",       msg:"Catering quote for 30 guests", t:"14s"},
+    {ch:"SF", pre:"Salesforce", msg:"Deal won · ACME Corp · $48k", t:"2s",  hot:true},
+    {ch:"HS", pre:"HubSpot",    msg:"New lead · Series B SaaS",    t:"8s"},
+    {ch:"ST", pre:"Stripe",     msg:"Invoice paid · $12,400",      t:"14s"},
   ];
-  const chColor = {IG:"oklch(0.78 0.18 320)", WA:"oklch(0.80 0.18 145)", "✉":"oklch(0.85 0.16 60)"};
+  const chColor = {SF:"oklch(0.78 0.18 220)", HS:"oklch(0.78 0.18 50)", ST:"oklch(0.78 0.18 280)"};
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/260", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
+    <div className="viz-frame relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/240", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="absolute top-3 left-4 right-4 flex items-center justify-between z-10">
-        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Inbox · all channels</span>
+        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Integration hub · live</span>
         <span className="pill pill-violet !text-[12px]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
-          AI on duty
+          Sync active
         </span>
       </div>
 
@@ -944,8 +995,8 @@ function VizReceptionist() {
         {/* Inbox list */}
         <div className="w-[44%] rounded-xl border border-white/10 bg-black/15 overflow-hidden">
           <div className="px-3 py-2.5 border-b border-white/10 flex items-center justify-between">
-            <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Conversations</span>
-            <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">+24 today</span>
+            <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Events</span>
+            <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">+1,420 today</span>
           </div>
           <div className="flex flex-col">
             {inbox.map((m,i)=>(
@@ -965,18 +1016,18 @@ function VizReceptionist() {
           </div>
         </div>
 
-        {/* Active conversation + AI thinking */}
+        {/* Active event + normalization */}
         <div className="flex-1 rounded-xl border border-white/10 bg-black/15 overflow-hidden flex flex-col">
           <div className="px-3 py-2.5 border-b border-white/10 flex items-center gap-2">
             <span className="w-5 h-5 rounded text-[12px] font-mono flex items-center justify-center"
-                  style={{background:"color-mix(in oklch, oklch(0.78 0.18 320) 18%, transparent)", color:"oklch(0.78 0.18 320)"}}>IG</span>
-            <span className="text-[13px] text-[var(--bone)]">@laura.m</span>
-            <span className="ml-auto text-[12px] font-mono text-[var(--mute)]">replying · 0.8s</span>
+                  style={{background:"color-mix(in oklch, oklch(0.78 0.18 220) 18%, transparent)", color:"oklch(0.78 0.18 220)"}}>SF</span>
+            <span className="text-[13px] text-[var(--bone)]">Salesforce</span>
+            <span className="ml-auto text-[12px] font-mono text-[var(--mute)]">routed · 0.6s</span>
           </div>
 
           <div className="flex-1 px-3 py-3 flex flex-col gap-2 overflow-hidden">
             <div className="self-start max-w-[90%] px-3 py-2 rounded-lg rounded-bl-sm bg-white/[0.06] border border-white/10 text-[13px] text-[var(--bone)]">
-              Table for 4 tomorrow at 8pm?
+              opportunity.closed_won · ACME Corp · $48,000
             </div>
 
             <div className="self-start px-3 py-2 rounded-lg border text-[12px] font-mono"
@@ -985,22 +1036,22 @@ function VizReceptionist() {
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] dot-1"></span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] dot-2"></span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] dot-3"></span>
-                <span className="ml-1 opacity-80">analyzing</span>
+                <span className="ml-1 opacity-80">normalizing</span>
               </div>
-              <div className="opacity-80">intent: booking · sentiment: + · escalate: no</div>
+              <div className="opacity-80">source: sfdc.opportunity · schema: v3 · dest: 3 systems</div>
             </div>
 
             <div className="chat-bubble b3 self-end max-w-[90%] mt-auto px-3 py-2 rounded-lg rounded-br-sm border text-[13px] text-[var(--bone)]"
                  style={{background:"oklch(0.72 0.22 285 / 0.10)", borderColor:"oklch(0.72 0.22 285 / 0.30)"}}>
-              Table 7, tomorrow 20:00 — confirmation sent via WhatsApp.
+              → NetSuite invoice · HubSpot company · Slack alert
             </div>
           </div>
         </div>
       </div>
 
       <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">📞 Voice + 💬 Text · 24/7</span>
-        <span className="text-[var(--mute-2)]">auto-resolved · <span style={{color:"oklch(0.85 0.16 285)"}}>87%</span></span>
+        <span className="text-[var(--mute)]">API · Webhooks · CSV · SFTP</span>
+        <span className="text-[var(--mute-2)]">auto-routed · <span style={{color:"oklch(0.85 0.16 285)"}}>99.97%</span></span>
       </div>
     </div>
   );
@@ -1008,23 +1059,23 @@ function VizReceptionist() {
 
 function VizReceptionistMobile() {
   const inbox = [
-    {ch:"IG",  pre:"@laura.m",     msg:"Table for 4 tomorrow at 8pm?", t:"2s",  hot:true},
-    {ch:"WA",  pre:"+1 555 12...", msg:"Cancel Thursday reservation",  t:"8s"},
-    {ch:"✉",  pre:"events@",       msg:"Catering quote for 30 guests", t:"14s"},
+    {ch:"SF", pre:"Salesforce", msg:"Deal won · ACME Corp · $48k", t:"2s",  hot:true},
+    {ch:"HS", pre:"HubSpot",    msg:"New lead · Series B SaaS",    t:"8s"},
+    {ch:"ST", pre:"Stripe",     msg:"Invoice paid · $12,400",      t:"14s"},
   ];
-  const chColor = {IG:"oklch(0.78 0.18 320)", WA:"oklch(0.80 0.18 145)", "✉":"oklch(0.85 0.16 60)"};
+  const chColor = {SF:"oklch(0.78 0.18 220)", HS:"oklch(0.78 0.18 50)", ST:"oklch(0.78 0.18 280)"};
   return (
     <div className="w-full rounded-2xl overflow-hidden" style={{background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Inbox · all channels</span>
+        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Integration hub · live</span>
         <span className="pill pill-violet !text-[12px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>AI on duty
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>Sync active
         </span>
       </div>
       <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-black/20 overflow-hidden">
         <div className="px-3 py-2.5 border-b border-white/10 flex items-center justify-between">
-          <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Conversations</span>
-          <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">+24 today</span>
+          <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Events</span>
+          <span className="text-[12px] font-mono tnum text-[var(--mute-2)]">+1,420 today</span>
         </div>
         {inbox.map((m,i) => (
           <div key={i} className="inbox-row px-3 py-3 border-b border-white/5 last:border-b-0 flex items-start gap-2.5"
@@ -1042,8 +1093,8 @@ function VizReceptionistMobile() {
         ))}
       </div>
       <div className="px-4 pb-3 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">📞 Voice + 💬 Text · 24/7</span>
-        <span className="text-[var(--mute-2)]">auto-resolved · <span style={{color:"oklch(0.85 0.16 285)"}}>87%</span></span>
+        <span className="text-[var(--mute)]">API · Webhooks · CSV · SFTP</span>
+        <span className="text-[var(--mute-2)]">auto-routed · <span style={{color:"oklch(0.85 0.16 285)"}}>99.97%</span></span>
       </div>
     </div>
   );
@@ -1051,32 +1102,32 @@ function VizReceptionistMobile() {
 
 function VizInventory() {
   const items = [
-    {name:"Coffee beans · AA", v: 72, eta:"5 days"},
-    {name:"Whole milk",        v: 38, eta:"Friday",  warn:true},
-    {name:"12oz cups",         v: 84, eta:"8 days"},
-    {name:"Napkins",           v: 22, eta:"today",   crit:true},
+    {name:"ACME Corp · $48,400", v: 24, eta:"24d"},
+    {name:"Beta LLC · $74,200",  v: 58, eta:"52d", warn:true},
+    {name:"Gamma Inc · $24,800", v: 78, eta:"70d", warn:true},
+    {name:"Delta Co · $9,200",   v: 99, eta:"95d", crit:true},
   ];
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/260", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
+    <div className="viz-frame relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/240", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="absolute top-3 left-4 right-4 flex items-center justify-between z-10">
-        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Inventory · forecast</span>
+        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">AR Aging · reconciliation</span>
         <span className="pill pill-violet !text-[12px]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
-          Syncing
+          Reconciling
         </span>
       </div>
 
       <div className="absolute inset-x-3 top-12 bottom-9 flex gap-2.5">
         {/* Live registry */}
         <div className="w-[58%] rounded-xl border border-white/10 bg-black/15 overflow-hidden p-3">
-          <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-2.5">Stock levels</div>
+          <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-2.5">Open invoices</div>
           <div className="space-y-2.5">
             {items.map((it,i)=>(
               <div key={i}>
                 <div className="flex items-baseline justify-between mb-1">
                   <span className="text-[14px] text-[var(--bone)]">{it.name}</span>
                   <span className="text-[13px] font-mono tnum"
-                        style={{color: it.crit?"oklch(0.78 0.20 30)" : it.warn?"oklch(0.85 0.16 60)" : "rgba(238,234,246,0.6)"}}>{it.v}%</span>
+                        style={{color: it.crit?"oklch(0.78 0.20 30)" : it.warn?"oklch(0.85 0.16 60)" : "rgba(238,234,246,0.6)"}}>{it.eta}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                   <div className="h-full rounded-full inv-bar" style={{
@@ -1111,23 +1162,23 @@ function VizInventory() {
           <div className="space-y-2 text-[13px]">
             <div className="flex items-start gap-2">
               <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{background:"oklch(0.78 0.20 30)"}}></span>
-              <span className="text-[var(--mute-2)]">Out of <span className="text-[var(--bone)]">napkins</span> today 16:00</span>
+              <span className="text-[var(--mute-2)]"><span className="text-[var(--bone)]">Delta Co</span> — 95 days, auto-flagged</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{background:"oklch(0.85 0.16 60)"}}></span>
-              <span className="text-[var(--mute-2)]">Milk runs out <span className="text-[var(--bone)]">Friday</span></span>
+              <span className="text-[var(--mute-2)]"><span className="text-[var(--bone)]">Gamma Inc</span> enters 90+ Friday</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{background:"oklch(0.85 0.16 285)"}}></span>
-              <span className="text-[var(--mute-2)]">Auto-order sent to <span className="text-[var(--bone)]">3 suppliers</span></span>
+              <span className="text-[var(--mute-2)]">Reminders sent to <span className="text-[var(--bone)]">4 accounts</span></span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">last count · <span className="counter-tick">12s ago</span></span>
-        <span className="text-[var(--mute-2)]">waste prevented · <span style={{color:"oklch(0.85 0.16 285)"}}>$ 312 / wk</span></span>
+        <span className="text-[var(--mute)]">last sync · <span className="counter-tick">12s ago</span></span>
+        <span className="text-[var(--mute-2)]">collected this wk · <span style={{color:"oklch(0.85 0.16 285)"}}>$ 18.4k</span></span>
       </div>
     </div>
   );
@@ -1135,10 +1186,10 @@ function VizInventory() {
 
 function VizInventoryMobile() {
   const items = [
-    {name:"Coffee beans AA", v:72},
-    {name:"Whole milk",      v:38, warn:true},
-    {name:"12oz cups",       v:84},
-    {name:"Napkins",         v:22, crit:true},
+    {name:"ACME Corp · $48.4k", v:24, eta:"24d"},
+    {name:"Beta LLC · $74.2k",  v:58, eta:"52d", warn:true},
+    {name:"Gamma Inc · $24.8k", v:78, eta:"70d", warn:true},
+    {name:"Delta Co · $9.2k",   v:99, eta:"95d", crit:true},
   ];
   const barColor = it => it.crit
     ? "linear-gradient(90deg, oklch(0.65 0.22 30), oklch(0.78 0.20 30))"
@@ -1148,19 +1199,19 @@ function VizInventoryMobile() {
   return (
     <div className="w-full rounded-2xl overflow-hidden" style={{background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Inventory · forecast</span>
+        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">AR Aging · reconciliation</span>
         <span className="pill pill-violet !text-[12px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>Syncing
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>Reconciling
         </span>
       </div>
       <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-black/20 p-3">
-        <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-3">Stock levels</div>
+        <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-3">Open invoices</div>
         <div className="space-y-2.5">
           {items.map((it,i) => (
             <div key={i}>
               <div className="flex items-baseline justify-between mb-1">
                 <span className="text-[13px] text-[var(--bone)]">{it.name}</span>
-                <span className="text-[13px] font-mono tnum" style={{color:valColor(it)}}>{it.v}%</span>
+                <span className="text-[13px] font-mono tnum" style={{color:valColor(it)}}>{it.eta}</span>
               </div>
               <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                 <div className="h-full rounded-full inv-bar" style={{width:`${it.v}%`, background:barColor(it), animationDelay:`${i*0.4}s`}}></div>
@@ -1172,11 +1223,11 @@ function VizInventoryMobile() {
       <div className="px-4 pb-3 space-y-1">
         <div className="flex items-center gap-2 text-[12px] font-mono">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{background:"oklch(0.78 0.20 30)"}}></span>
-          <span className="text-[var(--mute-2)]">Out of <span className="text-[var(--bone)]">napkins</span> today 16:00</span>
+          <span className="text-[var(--mute-2)]"><span className="text-[var(--bone)]">Delta Co</span> — 95 days, auto-flagged</span>
         </div>
         <div className="flex items-center gap-2 text-[12px] font-mono">
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{background:"oklch(0.85 0.16 60)"}}></span>
-          <span className="text-[var(--mute-2)]">Milk runs out <span className="text-[var(--bone)]">Friday</span></span>
+          <span className="text-[var(--mute-2)]"><span className="text-[var(--bone)]">Gamma Inc</span> enters 90+ Friday</span>
         </div>
       </div>
     </div>
@@ -1185,30 +1236,30 @@ function VizInventoryMobile() {
 
 function VizTotem() {
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/260", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
+    <div className="viz-frame relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/240", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="absolute top-3 left-4 right-4 flex items-center justify-between z-10">
-        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Self-order · build burger</span>
-        <span className="text-[13px] font-mono text-[var(--bone)] tnum">$ 14.20</span>
+        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Admin console · build view</span>
+        <span className="text-[13px] font-mono text-[var(--bone)] tnum">v2.4.1</span>
       </div>
 
       <div className="absolute inset-x-3 top-12 bottom-9 flex gap-2.5">
         {/* Build flow */}
         <div className="w-[58%] rounded-xl border border-white/10 bg-black/15 p-3 flex flex-col gap-2">
           <div className="flex items-center gap-1.5 text-[13px] font-mono">
-            <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>1 BURGER</span>
+            <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>1 LAYOUT</span>
             <span className="text-[var(--mute)]">→</span>
-            <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>2 INGREDIENTS</span>
+            <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>2 MODULES</span>
             <span className="text-[var(--mute)]">→</span>
-            <span className="px-1.5 py-0.5 rounded text-[var(--mute-2)] border border-white/10">3 SUMMARY</span>
+            <span className="px-1.5 py-0.5 rounded text-[var(--mute-2)] border border-white/10">3 ROLES</span>
           </div>
           <div className="grid grid-cols-3 gap-1.5 mt-1">
             {[
-              {l:"Cheddar",  on:true},
-              {l:"Bacon",    on:true},
-              {l:"Avocado",  on:true},
-              {l:"Onion",    on:false},
-              {l:"Pickles",  on:false},
-              {l:"Jalapeño", on:false},
+              {l:"Users",    on:true},
+              {l:"Revenue",  on:true},
+              {l:"Orders",   on:true},
+              {l:"Logs",     on:false},
+              {l:"Reports",  on:false},
+              {l:"Settings", on:false},
             ].map((b,i)=>(
               <button key={i} className={`totem-btn t${(i%4)+1} text-[13px] py-2 rounded-md border`}
                 style={b.on
@@ -1219,62 +1270,62 @@ function VizTotem() {
             ))}
           </div>
           <div className="mt-auto flex items-center justify-between text-[13px] font-mono pt-2 border-t border-white/10">
-            <span className="text-[var(--mute)]">+ Combo? <span className="text-[var(--bone)]">+$3.20</span></span>
-            <span className="px-3 py-1 rounded-full text-[13px]" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Confirm →</span>
+            <span className="text-[var(--mute)]">+ Custom widget? <span className="text-[var(--bone)]">configurable</span></span>
+            <span className="px-3 py-1 rounded-full text-[13px]" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Publish →</span>
           </div>
         </div>
 
-        {/* Ticket → KDS */}
+        {/* Audit log */}
         <div className="flex-1 rounded-xl border border-white/10 bg-black/15 p-3 flex flex-col">
-          <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-2">Kitchen #2</div>
+          <div className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)] mb-2">Audit log</div>
           <div className="rounded-md border p-2 text-[13px] font-mono"
                style={{background:"oklch(0.72 0.22 285 / 0.06)", borderColor:"oklch(0.72 0.22 285 / 0.25)"}}>
-            <div className="flex justify-between mb-1 text-[var(--bone)]"><span>#K-208</span><span className="counter-tick" style={{color:"oklch(0.85 0.16 285)"}}>● new</span></div>
-            <div className="text-[var(--mute-2)]">1× Burger</div>
-            <div className="text-[var(--mute)] pl-2">+ cheddar</div>
-            <div className="text-[var(--mute)] pl-2">+ bacon</div>
-            <div className="text-[var(--mute)] pl-2">+ avocado</div>
+            <div className="flex justify-between mb-1 text-[var(--bone)]"><span>evt_2841</span><span className="counter-tick" style={{color:"oklch(0.85 0.16 285)"}}>● new</span></div>
+            <div className="text-[var(--mute-2)]">user.created</div>
+            <div className="text-[var(--mute)] pl-2">+ Sarah K.</div>
+            <div className="text-[var(--mute)] pl-2">+ role: admin</div>
+            <div className="text-[var(--mute)] pl-2">+ dept: finance</div>
           </div>
           <div className="mt-auto text-[13px] font-mono">
             <div className="flex items-center justify-between text-[var(--mute-2)]">
-              <span>queue</span><span className="tnum text-[var(--bone)]">3 ahead</span>
+              <span>events / day</span><span className="tnum text-[var(--bone)]">2,140</span>
             </div>
             <div className="flex items-center justify-between text-[var(--mute-2)]">
-              <span>ETA</span><span className="tnum" style={{color:"oklch(0.85 0.16 285)"}}>~6 min</span>
+              <span>sync</span><span className="tnum" style={{color:"oklch(0.85 0.16 285)"}}>instant</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">avg upsell · <span style={{color:"oklch(0.85 0.16 285)"}}>+$3.10</span> / order</span>
-        <span className="text-[var(--mute-2)]">sent in <span style={{color:"oklch(0.85 0.16 285)"}}>0.4s</span></span>
+        <span className="text-[var(--mute)]">avg view load · <span style={{color:"oklch(0.85 0.16 285)"}}>&lt;120ms</span></span>
+        <span className="text-[var(--mute-2)]">deployed in <span style={{color:"oklch(0.85 0.16 285)"}}>&lt;2min</span></span>
       </div>
     </div>
   );
 }
 
 function VizTotemMobile() {
-  const ingredients = [
-    {l:"Cheddar",on:true},{l:"Bacon",on:true},{l:"Avocado",on:true},
-    {l:"Onion",on:false},{l:"Pickles",on:false},{l:"Jalapeño",on:false},
+  const modules = [
+    {l:"Users",   on:true},{l:"Revenue", on:true},{l:"Orders",  on:true},
+    {l:"Logs",    on:false},{l:"Reports",on:false},{l:"Settings",on:false},
   ];
   return (
     <div className="w-full rounded-2xl overflow-hidden" style={{background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Self-order · build burger</span>
-        <span className="text-[13px] font-mono tnum text-[var(--bone)]">$ 14.20</span>
+        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Admin console · build view</span>
+        <span className="text-[13px] font-mono tnum text-[var(--bone)]">v2.4.1</span>
       </div>
       <div className="mx-3 mb-3 rounded-xl border border-white/10 bg-black/20 p-3">
         <div className="flex items-center gap-1.5 text-[13px] font-mono mb-3 flex-wrap">
-          <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>1 BURGER</span>
+          <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>1 LAYOUT</span>
           <span className="text-[var(--mute)]">→</span>
-          <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>2 ADD-ONS</span>
+          <span className="px-1.5 py-0.5 rounded" style={{background:"oklch(0.72 0.22 285 / 0.20)", color:"oklch(0.85 0.14 285)"}}>2 MODULES</span>
           <span className="text-[var(--mute)]">→</span>
-          <span className="px-1.5 py-0.5 rounded text-[var(--mute-2)] border border-white/10">3 PAY</span>
+          <span className="px-1.5 py-0.5 rounded text-[var(--mute-2)] border border-white/10">3 ROLES</span>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
-          {ingredients.map((b,i) => (
+          {modules.map((b,i) => (
             <button key={i} className={`totem-btn t${(i%4)+1} text-[13px] py-2 rounded-md border`}
               style={b.on
                 ? {background:"oklch(0.72 0.22 285 / 0.18)", borderColor:"oklch(0.72 0.22 285 / 0.45)", color:"oklch(0.88 0.10 285)"}
@@ -1284,133 +1335,40 @@ function VizTotemMobile() {
           ))}
         </div>
         <div className="mt-3 flex items-center justify-between text-[13px] font-mono pt-2 border-t border-white/10">
-          <span className="text-[var(--mute)]">+ Combo? <span className="text-[var(--bone)]">+$3.20</span></span>
-          <span className="px-3 py-1 rounded-full" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Confirm →</span>
+          <span className="text-[var(--mute)]">+ Custom widget? <span className="text-[var(--bone)]">configurable</span></span>
+          <span className="px-3 py-1 rounded-full" style={{background:"oklch(0.72 0.22 285)", color:"#0c0a13"}}>Publish →</span>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ====================== VIZ LEAD SCORING ====================== */
-function VizLeadScoring() {
-  const leads = [
-    {ch:"WA", name:"Carlos M.",    msg:"I want the full package",       score:94, tag:"Hot"},
-    {ch:"IG", name:"@salon_norte", msg:"Pricing for 3 locations?",      score:81, tag:"Warm"},
-    {ch:"✉",  name:"info@resto",   msg:"Demo this week?",               score:67, tag:"Warm"},
-    {ch:"WA", name:"+1 424 55...", msg:"How much does it cost?",        score:28, tag:"Cold"},
-  ];
-  const scoreColor = s => s>=80 ? "oklch(0.72 0.22 285)" : s>=50 ? "oklch(0.80 0.18 145)" : "oklch(0.60 0.08 220)";
-  const tagBg     = s => s>=80 ? "oklch(0.72 0.22 285 / 0.12)" : s>=50 ? "oklch(0.80 0.18 145 / 0.10)" : "rgba(255,255,255,0.04)";
-  const chColor   = {WA:"oklch(0.80 0.18 145)", IG:"oklch(0.78 0.18 320)", "✉":"oklch(0.85 0.16 60)"};
-  return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{aspectRatio:"600/260", background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
-      <div className="absolute top-3 left-4 right-4 flex items-center justify-between z-10">
-        <span className="text-[13px] font-mono tracking-[0.18em] uppercase text-[var(--mute)]">Lead pipeline · AI scoring</span>
-        <span className="pill pill-violet !text-[12px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
-          Live
-        </span>
-      </div>
-      <div className="absolute inset-x-3 top-12 bottom-9 rounded-xl border border-white/10 bg-black/15 overflow-hidden">
-        <div className="px-3 py-2.5 border-b border-white/10 flex items-center justify-between">
-          <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Leads · ranked by value</span>
-          <span className="text-[13px] font-mono tnum text-[var(--mute-2)]">+12 today</span>
-        </div>
-        {leads.map((l,i)=>(
-          <div key={i} className="inbox-row px-3 py-3 border-b border-white/5 last:border-b-0 flex items-center gap-2.5"
-               style={{animationDelay:`${i*0.35}s`}}>
-            <span className="w-5 h-5 rounded text-[13px] font-mono flex items-center justify-center shrink-0"
-                  style={{background:`color-mix(in oklch, ${chColor[l.ch]} 18%, transparent)`, color:chColor[l.ch]}}>{l.ch}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-[13px] font-mono text-[var(--bone)] truncate">{l.name}</span>
-                <span className="text-[12px] font-mono shrink-0 px-1.5 py-0.5 rounded"
-                      style={{background:tagBg(l.score), color:scoreColor(l.score)}}>{l.tag}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div className="h-full rounded-full bar-shimmer relative overflow-hidden"
-                       style={{width:`${l.score}%`, background:`linear-gradient(90deg, ${scoreColor(l.score)}, color-mix(in oklch, ${scoreColor(l.score)} 60%, transparent))`}}></div>
-                </div>
-                <span className="text-[13px] font-mono tnum shrink-0" style={{color:scoreColor(l.score)}}>{l.score}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">WA · IG · Email · unified</span>
-        <span className="text-[var(--mute-2)]">auto-prioritized · <span style={{color:"oklch(0.85 0.16 285)"}}>AI</span></span>
-      </div>
-    </div>
-  );
-}
-
-function VizLeadScoringMobile() {
-  const leads = [
-    {ch:"WA", name:"Carlos M.",    score:94, tag:"Hot"},
-    {ch:"IG", name:"@salon_norte", score:81, tag:"Warm"},
-    {ch:"✉",  name:"info@resto",   score:67, tag:"Warm"},
-    {ch:"WA", name:"+1 424 55...", score:28, tag:"Cold"},
-  ];
-  const scoreColor = s => s>=80 ? "oklch(0.72 0.22 285)" : s>=50 ? "oklch(0.80 0.18 145)" : "oklch(0.60 0.08 220)";
-  const tagBg = s => s>=80 ? "oklch(0.72 0.22 285 / 0.12)" : s>=50 ? "oklch(0.80 0.18 145 / 0.10)" : "rgba(255,255,255,0.04)";
-  const chColor = {WA:"oklch(0.80 0.18 145)", IG:"oklch(0.78 0.18 320)", "✉":"oklch(0.85 0.16 60)"};
-  return (
-    <div className="w-full rounded-2xl overflow-hidden" style={{background:"linear-gradient(180deg, rgba(180,170,255,0.04), rgba(180,170,255,0))"}}>
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-        <span className="text-[13px] font-mono tracking-[0.15em] uppercase text-[var(--mute)]">Lead pipeline · AI scoring</span>
-        <span className="pill pill-violet !text-[12px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>Live
-        </span>
-      </div>
-      <div className="mx-3 mb-2 rounded-xl border border-white/10 bg-black/20 overflow-hidden">
-        <div className="px-3 py-2.5 border-b border-white/10 flex items-center justify-between">
-          <span className="text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--mute)]">Leads · ranked by value</span>
-          <span className="text-[13px] font-mono tnum text-[var(--mute-2)]">+12 today</span>
-        </div>
-        {leads.map((l,i) => (
-          <div key={i} className="inbox-row px-3 py-3 border-b border-white/5 last:border-b-0 flex items-center gap-2.5"
-               style={{animationDelay:`${i*0.35}s`}}>
-            <span className="w-6 h-6 rounded text-[13px] font-mono flex items-center justify-center shrink-0"
-                  style={{background:`color-mix(in oklch, ${chColor[l.ch]} 18%, transparent)`, color:chColor[l.ch]}}>{l.ch}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="text-[13px] font-mono text-[var(--bone)] truncate">{l.name}</span>
-                <span className="text-[12px] font-mono shrink-0 px-1.5 py-0.5 rounded"
-                      style={{background:tagBg(l.score), color:scoreColor(l.score)}}>{l.tag}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div className="h-full rounded-full" style={{width:`${l.score}%`, background:`linear-gradient(90deg, ${scoreColor(l.score)}, color-mix(in oklch, ${scoreColor(l.score)} 60%, transparent))`}}></div>
-                </div>
-                <span className="text-[13px] font-mono tnum shrink-0" style={{color:scoreColor(l.score)}}>{l.score}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="px-4 pb-3 flex items-center justify-between text-[12px] font-mono">
-        <span className="text-[var(--mute)]">WA · IG · Email · unified</span>
-        <span className="text-[var(--mute-2)]">auto-prioritized · <span style={{color:"oklch(0.85 0.16 285)"}}>AI</span></span>
       </div>
     </div>
   );
 }
 
 /* ====================== EXPANDABLE SERVICE CARD ====================== */
-function ServiceCard({pill, title, body, viz, vizMobile, expandedContent, large, defaultOpen, alwaysOpen}) {
+function ServiceCard({pill, title, body, viz, vizMobile, expandedContent, large, defaultOpen, alwaysOpen, n, accent, spec}) {
   const [open, setOpen] = useState(!!defaultOpen);
+  const accentStyle = accent ? {"--card-accent": accent} : undefined;
+  // Strip "NN · " prefix from pill since the ghost numeral already shows the number
+  const cleanPill = (n && typeof pill === "string" && pill.startsWith(`${n} · `)) ? pill.slice(n.length + 3) : pill;
   return (
-    <article className={`surface p-7 lg:p-8 flex flex-col h-full ${large?"lg:col-span-2":""}`}>
+    <article className={`surface p-7 lg:p-8 flex flex-col h-full ${large?"lg:col-span-2":""}`} style={accentStyle}>
+      {n && <div className="ghost-num" aria-hidden>{n}</div>}
       <div className="flex items-center justify-between mb-5">
-        <span className="pill">{pill}</span>
+        <span className="pill">{cleanPill}</span>
         {large && <span className="pill pill-violet !text-[12px]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>
           Flagship system
         </span>}
       </div>
+      {spec && (
+        <div className="card-spec">
+          {spec.map((s,i)=>(
+            <React.Fragment key={i}>
+              {i>0 && <span className="dot"></span>}
+              <span>{s}</span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
       <h3 className={`display-serif tracking-[-0.02em] text-[var(--bone)] ${large?"text-[34px] lg:text-[40px]":"text-[26px] lg:text-[28px]"}`}>
         {title}
       </h3>
@@ -1418,12 +1376,7 @@ function ServiceCard({pill, title, body, viz, vizMobile, expandedContent, large,
       {vizMobile && <div className="mt-6">{vizMobile}</div>}
       <p className="mt-6 text-[14.5px] leading-[1.55] text-[var(--mute-2)] max-w-xl">{body}</p>
 
-      {alwaysOpen ? (
-        <div className="mt-7 pt-7 border-t border-white/10">
-          {expandedContent}
-        </div>
-      ) : (
-        <>
+      <>
           <button
             onClick={(e)=>{e.stopPropagation();setOpen(o=>!o);}}
             className="mt-6 self-start ghost-btn text-[12.5px]"
@@ -1439,7 +1392,6 @@ function ServiceCard({pill, title, body, viz, vizMobile, expandedContent, large,
             </div>
           </div>
         </>
-      )}
     </article>
   );
 }
@@ -1478,25 +1430,25 @@ function OrdersDetail() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
         <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">How it flows</div>
-        <StepRow n="1" title="Customer places order" body="Web, kiosk, WhatsApp, Instagram DM, Google or phone — all paths feed one inbox."/>
-        <StepRow n="2" title="System validates & charges" body="Stripe / local payment processor, fraud checks, automatic split for delivery vs. dine-in."/>
-        <StepRow n="3" title="Routed to kitchen / staff" body="Sent to KDS or printer with custom routing — pizzas to oven station, drinks to bar."/>
-        <StepRow n="4" title="Customer receives updates" body="Status pings via the channel they ordered from. No app required."/>
+        <StepRow n="1" title="Source intake" body="Excel exports, email attachments, API events, web forms, scheduled queries — all land in one normalized queue."/>
+        <StepRow n="2" title="Engineered logic" body="Custom rules engine validates each record, reconciles against your source of truth, applies your business logic."/>
+        <StepRow n="3" title="Action" body="Writes back to your database / ERP, generates reports, pushes alerts to Slack or email when human attention is needed."/>
+        <StepRow n="4" title="Audit trail" body="Every transformation logged with input, output and reasoning. Exportable for compliance and review."/>
       </div>
       <div className="space-y-6">
-        <DetailList title="Channels included" items={[
-          "Branded ordering website",
-          "Self-order kiosk (totem)",
-          "WhatsApp Business catalog + checkout",
-          "Instagram DM ordering",
-          "Google Business profile",
-          "QR code at table"
+        <DetailList title="Typical use cases" items={[
+          "AR Aging · automated reconciliation",
+          "Monthly close & financial reporting",
+          "Customer onboarding & KYC pipelines",
+          "Invoice generation & dispatch",
+          "Order-to-cash reconciliation",
+          "Subscription billing automation"
         ]}/>
         <DetailList title="Built on" items={[
-          "Stripe / MercadoPago / local rails",
-          "Twilio + WhatsApp Cloud API",
-          "Real-time KDS via WebSockets",
-          "Daily reconciliation reports"
+          "TypeScript / Python / Go",
+          "Postgres, Redis, S3",
+          "Temporal or Airflow for orchestration",
+          "Sentry + Datadog for observability"
         ]}/>
       </div>
     </div>
@@ -1507,19 +1459,19 @@ function WebDetail() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
-        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">What you get</div>
-        <StepRow n="1" title="Custom design" body="Hand-crafted layout — no templates. Built around your brand and one clear conversion goal."/>
-        <StepRow n="2" title="Sub-second load times" body="Edge-deployed, image-optimized, 95+ Lighthouse scores guaranteed."/>
-        <StepRow n="3" title="Built-in CMS" body="Edit copy and images yourself. No code, no developer needed after handoff."/>
-        <StepRow n="4" title="SEO + analytics ready" body="Schema markup, sitemap, Plausible or GA4 wired in from day one."/>
+        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">What we ship</div>
+        <StepRow n="1" title="Discovery & scope" body="Two-week design and technical scoping. Fixed-price quote with a timeline you can put in a board deck."/>
+        <StepRow n="2" title="Engineered front-end" body="Next.js or Remix on Vercel / AWS, sub-second TTFB, type-safe API contracts, real component library."/>
+        <StepRow n="3" title="Custom design" body="Hand-crafted layout built around your brand and your real flows — not a template, not a generic SaaS look."/>
+        <StepRow n="4" title="CMS handoff" body="Your team edits content, swaps imagery and ships pages without touching code or filing tickets with us."/>
       </div>
-      <DetailList title="Included" items={[
-        "Up to 8 unique pages",
-        "Mobile-first responsive design",
-        "Booking / contact / lead-capture forms",
-        "Multilingual support",
-        "Connected to your CRM, calendar or AI receptionist",
-        "30 days of post-launch tweaks"
+      <DetailList title="What we build" items={[
+        "Customer portals & account areas",
+        "Partner & vendor platforms",
+        "Internal web apps for operations",
+        "Marketing sites with real back-ends",
+        "MVPs for new product lines",
+        "Documentation & developer portals"
       ]}/>
     </div>
   );
@@ -1529,19 +1481,19 @@ function ReceptionistDetail() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
-        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">What it does</div>
-        <StepRow n="1" title="Answers every channel" body="WhatsApp, Instagram DM, Facebook, email, web chat — one brain, every inbox."/>
-        <StepRow n="2" title="Books and reschedules" body="Plugs into Google Calendar, Calendly or your POS to manage real availability."/>
-        <StepRow n="3" title="Knows your business" body="Trained on your menu, hours, FAQs, return policy and tone of voice."/>
-        <StepRow n="4" title="Hands off when needed" body="Detects high-stakes messages and pings you in Slack or WhatsApp instantly."/>
+        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">How it works</div>
+        <StepRow n="1" title="Audit your stack" body="Map every system, every data flow and every CSV that's emailed around weekly. Find the breaks."/>
+        <StepRow n="2" title="Engineered connectors" body="Bidirectional sync where APIs allow, scheduled jobs where they don't. Idempotent, retriable, observable."/>
+        <StepRow n="3" title="Source of truth" body="Define which system owns which fields and enforce it programmatically. No more conflicting numbers in two tools."/>
+        <StepRow n="4" title="Observability" body="Dashboards for sync health, failure alerts to Slack, manual reconcile UI when human review is required."/>
       </div>
-      <DetailList title="Languages & integrations" items={[
-        "Native English + Spanish (more on request)",
-        "Google Reviews auto-reply",
-        "Stripe payments inside chat",
-        "Calendar / POS / CRM sync",
-        "Custom escalation rules",
-        "Monthly performance reports"
+      <DetailList title="Integration types" items={[
+        "Salesforce · HubSpot · Pipedrive",
+        "NetSuite · QuickBooks · Xero",
+        "Stripe · Adyen · MercadoPago",
+        "Slack · Teams · transactional email",
+        "Shopify · WooCommerce · custom carts",
+        "Snowflake · BigQuery · Redshift"
       ]}/>
     </div>
   );
@@ -1552,18 +1504,18 @@ function InventoryDetail() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
         <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">How it works</div>
-        <StepRow n="1" title="Track every unit" body="Scan in deliveries, deduct on sale, count manually when you want — all in one place."/>
-        <StepRow n="2" title="Forecast & alert" body="Learns your consumption pattern and alerts before you run out, not after."/>
-        <StepRow n="3" title="Auto-reorder" body="Pre-set thresholds trigger purchase orders to your suppliers automatically."/>
-        <StepRow n="4" title="Daily snapshot" body="Owner gets a 1-screen morning summary — no spreadsheets, no apps to open."/>
+        <StepRow n="1" title="Domain modeling" body="We sit with your ops team and map exactly how your business actually runs — not how the textbook says it should."/>
+        <StepRow n="2" title="Engineered system" body="Custom schema, custom logic, real-time where it matters, batch where it doesn't. Built to scale with your data."/>
+        <StepRow n="3" title="Migration" body="From your current spreadsheets, off-the-shelf ERP or third-party tool. Every record validated end-to-end before cutover."/>
+        <StepRow n="4" title="Training & handoff" body="Your team operates it. We document the data model, the business rules and every API surface."/>
       </div>
-      <DetailList title="Customer-friendly UI" items={[
-        "Designed for staff with zero training",
-        "Works on tablet, phone or POS screen",
-        "Big buttons, large text, clear states",
-        "Offline-tolerant — syncs when reconnected",
-        "Multi-location support",
-        "Loss / waste tracking"
+      <DetailList title="Common builds" items={[
+        "Custom AR / AP & collections",
+        "Inventory & warehouse management",
+        "Scheduling & booking back-offices",
+        "Workflow & approval systems",
+        "Multi-entity, multi-currency ops",
+        "Data-quality & cleanup tooling"
       ]}/>
     </div>
   );
@@ -1573,19 +1525,19 @@ function TotemDetail() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
-        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">Built for self-service</div>
-        <StepRow n="1" title="Custom-branded" body="Your colors, photography, menu structure — not a generic kiosk skin."/>
-        <StepRow n="2" title="Drives ticket size" body="Smart upsells, combos and add-ons. Average +22% per order vs. counter."/>
-        <StepRow n="3" title="Pays at the screen" body="Card, contactless, QR — connected to the same orders inbox as everything else."/>
-        <StepRow n="4" title="Hardware-agnostic" body="Runs on any tablet or kiosk display. We help you source if you don't have one."/>
+        <div className="text-[11px] tracking-[0.18em] uppercase text-[var(--mute)] font-mono mb-4">What we ship</div>
+        <StepRow n="1" title="Workflow audit" body="Where your team wastes hours, where errors happen, where decisions get blocked waiting on an export."/>
+        <StepRow n="2" title="Engineered admin tool" body="Role-based, audit-logged, fast to load, easy to extend without us — a real internal app, not a Retool form."/>
+        <StepRow n="3" title="Real-time data" body="Connected directly to your source databases and services. No nightly exports, no stale dashboards."/>
+        <StepRow n="4" title="Modular layout" body="Add views, widgets, reports and roles without engineering for every change. Your team owns the shape."/>
       </div>
       <DetailList title="Use cases" items={[
-        "Quick-service restaurants",
-        "Coffee shops & bakeries",
-        "Self check-in for clinics & gyms",
-        "Retail product configurators",
-        "Event ticketing & badge printing",
-        "Multi-language tourist-friendly menus"
+        "Operations consoles & ops dashboards",
+        "Customer support back-offices",
+        "Approval workflows (refunds, discounts)",
+        "Executive & investor dashboards",
+        "Data quality & cleanup tools",
+        "Compliance & audit-trail views"
       ]}/>
     </div>
   );
@@ -1602,53 +1554,51 @@ function Services() {
           <div className="max-w-2xl">
             <span className="pill mb-6"><span className="w-1.5 h-1.5 rounded-full" style={{background:"oklch(0.72 0.22 285)"}}></span>Services</span>
             <h2 className="display-serif text-[clamp(36px,4.6vw,60px)] mt-6 text-[var(--bone)]">
-              What we <span className="serif-it text-[var(--mute-2)]">build</span> for you.
+              What we <span className="serif-it text-[var(--mute-2)]">ship</span> for you.
             </h2>
           </div>
           <p className="text-[15px] leading-[1.55] text-[var(--mute-2)] max-w-sm">
-            Each piece stands alone. Together, they're the digital backbone
-            of a business that operates on autopilot. <span className="text-[var(--bone)]">Click any card</span> for the full breakdown.
+            Fixed-scope engagements. We design the interface, engineer the system
+            beneath it, document the code, and hand it off to your team.
+            <span className="text-[var(--bone)]"> Click any card</span> for the full breakdown.
           </p>
         </div>
 
         {!mid ? (
           /* <900px: single column */
           <div className="flex flex-col gap-5">
-            <ServiceCard pill="01 · Omnichannel ordering" title={<>Orders from <span className="serif-it">any channel</span>, on one screen.</>} vizMobile={<VizOrderFlowMobile/>} body="A central hub that takes orders from web, kiosks, WhatsApp, Instagram, Google or phone and routes them straight to your kitchen or team. No paper tickets, no missed orders, no replying to DMs at 11pm." expandedContent={<OrdersDetail/>}/>
-            <ServiceCard pill="02 · Websites" alwaysOpen title="Sites that sell, not decorate." vizMobile={<VizWebMobile/>} body="Restrained design, fast loads, and one clear path to conversion — book, buy, or schedule. Easy CMS so you stay in control after launch." expandedContent={<WebDetail/>}/>
-            <ServiceCard pill="03 · AI Receptionist" title="WhatsApp, IG, mail and reviews — answered." vizMobile={<VizReceptionistMobile/>} body="An AI trained on your menu, hours and policies. Books, replies, hands off the important ones, and never sleeps." expandedContent={<ReceptionistDetail/>}/>
-            <ServiceCard pill="04 · Smart inventory" title="Know what's missing before it's missing." vizMobile={<VizInventoryMobile/>} body="Stock tracking with alerts and auto-orders to your suppliers. UI built so anyone on staff can use it in 10 seconds." expandedContent={<InventoryDetail/>}/>
-            <ServiceCard pill="05 · Self-order kiosk" title="Customers build their own order." vizMobile={<VizTotemMobile/>} body="Touchscreen kiosk tailored to your menu and brand. Cuts queues, raises ticket size, frees your team to actually serve." expandedContent={<TotemDetail/>}/>
-            <ServiceCard pill="06 · Lead scoring" title="Know who to call back first." vizMobile={<VizLeadScoringMobile/>} body="Every message across WhatsApp, IG and email lands in one inbox, scored by urgency and value. Your team focuses on the ones that actually convert."/>
+            <ServiceCard n="01" accent="oklch(0.72 0.22 285)" spec={["Engineered","From spreadsheets","AR Aging"]} pill="01 · Process automation" title={<>From <span className="serif-it">spreadsheets</span> to software.</>} vizMobile={<VizOrderFlowMobile/>} body="We replace the manual Excel-and-email workflows that drain your finance and ops teams — AR Aging reconciliation, monthly close, customer onboarding, anything recurring — with engineered automations that run on their own and reconcile against your source of truth." expandedContent={<OrdersDetail/>}/>
+            <ServiceCard n="02" accent="oklch(0.74 0.14 195)" spec={["Real-time","Role-based","Audit-logged"]} pill="02 · Internal tools" alwaysOpen title="Dashboards your team will actually open." vizMobile={<VizTotemMobile/>} body="Admin consoles, ops dashboards and exec views built around how your business actually operates — not what a generic SaaS template assumed. Roles, audit logs and exports included." expandedContent={<TotemDetail/>}/>
+            <ServiceCard n="03" accent="oklch(0.78 0.16 75)" spec={["Custom schema","Your data model","Fast"]} pill="03 · Management systems" title={<>ERPs, CRMs and back-office, <span className="serif-it">re-engineered</span>.</>} vizMobile={<VizInventoryMobile/>} body="Custom AR, inventory, scheduling or workflow systems for when off-the-shelf software stops scaling with you. Built on your data model, not theirs — and finally fast." expandedContent={<InventoryDetail/>}/>
+            <ServiceCard n="04" accent="oklch(0.74 0.16 165)" spec={["Bidirectional","Idempotent","Observable"]} pill="04 · System integrations" title={<>Systems that <span className="serif-it">finally talk</span> to each other.</>} vizMobile={<VizReceptionistMobile/>} body="Bidirectional integrations between Salesforce, NetSuite, HubSpot, Stripe, Slack, your warehouse — anything with an API or a nightly CSV. Real-time, observable, and ours to debug." expandedContent={<ReceptionistDetail/>}/>
+            <ServiceCard n="05" accent="oklch(0.72 0.20 15)" spec={["Edge-deployed","CMS-editable","Sub-second"]} pill="05 · Web applications" title={<>Web apps, <span className="serif-it">shipped</span>.</>} vizMobile={<VizWebMobile/>} body="Customer portals, partner platforms, internal apps and MVPs. Modern stack, sub-second loads, and a CMS your team can actually edit after we hand it off." expandedContent={<WebDetail/>}/>
           </div>
         ) : !wide ? (
           /* 900–1399px: beam layout with smaller center gap, mobile viz */
           <div style={{display:"grid", gridTemplateColumns:"1fr clamp(60px,6vw,120px) 1fr", gap:"0 24px"}}>
             <div style={{display:"grid", gridTemplateRows:"repeat(3,1fr)", gap:"20px"}}>
-              <ServiceCard pill="01 · Omnichannel ordering" title={<>Orders from <span className="serif-it">any channel</span>, on one screen.</>} vizMobile={<VizOrderFlowMobile/>} body="A central hub that takes orders from web, kiosks, WhatsApp, Instagram, Google or phone and routes them straight to your kitchen or team. No paper tickets, no missed orders, no replying to DMs at 11pm." expandedContent={<OrdersDetail/>}/>
-              <ServiceCard pill="02 · Websites" alwaysOpen title="Sites that sell, not decorate." vizMobile={<VizWebMobile/>} body="Restrained design, fast loads, and one clear path to conversion — book, buy, or schedule. Easy CMS so you stay in control after launch." expandedContent={<WebDetail/>}/>
-              <ServiceCard pill="05 · Self-order kiosk" title="Customers build their own order." vizMobile={<VizTotemMobile/>} body="Touchscreen kiosk tailored to your menu and brand. Cuts queues, raises ticket size, frees your team to actually serve." expandedContent={<TotemDetail/>}/>
+              <ServiceCard n="01" accent="oklch(0.72 0.22 285)" spec={["Engineered","From spreadsheets","AR Aging"]} pill="01 · Process automation" title={<>From <span className="serif-it">spreadsheets</span> to software.</>} vizMobile={<VizOrderFlowMobile/>} body="We replace the manual Excel-and-email workflows that drain your finance and ops teams — AR Aging reconciliation, monthly close, customer onboarding, anything recurring — with engineered automations that run on their own and reconcile against your source of truth." expandedContent={<OrdersDetail/>}/>
+              <ServiceCard n="02" accent="oklch(0.74 0.14 195)" spec={["Real-time","Role-based","Audit-logged"]} pill="02 · Internal tools" alwaysOpen title="Dashboards your team will actually open." vizMobile={<VizTotemMobile/>} body="Admin consoles, ops dashboards and exec views built around how your business actually operates — not what a generic SaaS template assumed. Roles, audit logs and exports included." expandedContent={<TotemDetail/>}/>
+              <ServiceCard n="05" accent="oklch(0.72 0.20 15)" spec={["Edge-deployed","CMS-editable","Sub-second"]} pill="05 · Web applications" title={<>Web apps, <span className="serif-it">shipped</span>.</>} vizMobile={<VizWebMobile/>} body="Customer portals, partner platforms, internal apps and MVPs. Modern stack, sub-second loads, and a CMS your team can actually edit after we hand it off." expandedContent={<WebDetail/>}/>
             </div>
             <div/>
-            <div style={{display:"grid", gridTemplateRows:"repeat(3,1fr)", gap:"20px"}}>
-              <ServiceCard pill="03 · AI Receptionist" title="WhatsApp, IG, mail and reviews — answered." vizMobile={<VizReceptionistMobile/>} body="An AI trained on your menu, hours and policies. Books, replies, hands off the important ones, and never sleeps." expandedContent={<ReceptionistDetail/>}/>
-              <ServiceCard pill="04 · Smart inventory" title="Know what's missing before it's missing." vizMobile={<VizInventoryMobile/>} body="Stock tracking with alerts and auto-orders to your suppliers. UI built so anyone on staff can use it in 10 seconds." expandedContent={<InventoryDetail/>}/>
-              <ServiceCard pill="06 · Lead scoring" title="Know who to call back first." vizMobile={<VizLeadScoringMobile/>} body="Every message across WhatsApp, IG and email lands in one inbox, scored by urgency and value. Your team focuses on the ones that actually convert."/>
+            <div style={{display:"grid", gridTemplateRows:"repeat(2,1fr)", gap:"20px"}}>
+              <ServiceCard n="03" accent="oklch(0.78 0.16 75)" spec={["Custom schema","Your data model","Fast"]} pill="03 · Management systems" title={<>ERPs, CRMs and back-office, <span className="serif-it">re-engineered</span>.</>} vizMobile={<VizInventoryMobile/>} body="Custom AR, inventory, scheduling or workflow systems for when off-the-shelf software stops scaling with you. Built on your data model, not theirs — and finally fast." expandedContent={<InventoryDetail/>}/>
+              <ServiceCard n="04" accent="oklch(0.74 0.16 165)" spec={["Bidirectional","Idempotent","Observable"]} pill="04 · System integrations" title={<>Systems that <span className="serif-it">finally talk</span> to each other.</>} vizMobile={<VizReceptionistMobile/>} body="Bidirectional integrations between Salesforce, NetSuite, HubSpot, Stripe, Slack, your warehouse — anything with an API or a nightly CSV. Real-time, observable, and ours to debug." expandedContent={<ReceptionistDetail/>}/>
             </div>
           </div>
         ) : (
           /* ≥1400px: beam layout, desktop viz */
           <div style={{display:"grid", gridTemplateColumns:"1fr clamp(60px,8vw,160px) 1fr", gap:"24px"}}>
             <div style={{display:"grid", gridTemplateRows:"repeat(3,1fr)", gap:"20px"}}>
-              <ServiceCard pill="01 · Omnichannel ordering" title={<>Orders from <span className="serif-it">any channel</span>, on one screen.</>} viz={<VizOrderFlow/>} body="A central hub that takes orders from web, kiosks, WhatsApp, Instagram, Google or phone and routes them straight to your kitchen or team. No paper tickets, no missed orders, no replying to DMs at 11pm." expandedContent={<OrdersDetail/>}/>
-              <ServiceCard pill="02 · Websites" alwaysOpen title="Sites that sell, not decorate." viz={<VizWeb/>} body="Restrained design, fast loads, and one clear path to conversion — book, buy, or schedule. Easy CMS so you stay in control after launch." expandedContent={<WebDetail/>}/>
-              <ServiceCard pill="05 · Self-order kiosk" title="Customers build their own order." viz={<VizTotem/>} body="Touchscreen kiosk tailored to your menu and brand. Cuts queues, raises ticket size, frees your team to actually serve." expandedContent={<TotemDetail/>}/>
+              <ServiceCard n="01" accent="oklch(0.72 0.22 285)" spec={["Engineered","From spreadsheets","AR Aging"]} pill="01 · Process automation" title={<>From <span className="serif-it">spreadsheets</span> to software.</>} viz={<VizOrderFlow/>} body="We replace the manual Excel-and-email workflows that drain your finance and ops teams — AR Aging reconciliation, monthly close, customer onboarding, anything recurring — with engineered automations that run on their own and reconcile against your source of truth." expandedContent={<OrdersDetail/>}/>
+              <ServiceCard n="02" accent="oklch(0.74 0.14 195)" spec={["Real-time","Role-based","Audit-logged"]} pill="02 · Internal tools" alwaysOpen title="Dashboards your team will actually open." viz={<VizTotem/>} body="Admin consoles, ops dashboards and exec views built around how your business actually operates — not what a generic SaaS template assumed. Roles, audit logs and exports included." expandedContent={<TotemDetail/>}/>
+              <ServiceCard n="05" accent="oklch(0.72 0.20 15)" spec={["Edge-deployed","CMS-editable","Sub-second"]} pill="05 · Web applications" title={<>Web apps, <span className="serif-it">shipped</span>.</>} viz={<VizWeb/>} body="Customer portals, partner platforms, internal apps and MVPs. Modern stack, sub-second loads, and a CMS your team can actually edit after we hand it off." expandedContent={<WebDetail/>}/>
             </div>
             <div/>
-            <div style={{display:"grid", gridTemplateRows:"repeat(3,1fr)", gap:"20px"}}>
-              <ServiceCard pill="03 · AI Receptionist" title="WhatsApp, IG, mail and reviews — answered." viz={<VizReceptionist/>} body="An AI trained on your menu, hours and policies. Books, replies, hands off the important ones, and never sleeps." expandedContent={<ReceptionistDetail/>}/>
-              <ServiceCard pill="04 · Smart inventory" title="Know what's missing before it's missing." viz={<VizInventory/>} body="Stock tracking with alerts and auto-orders to your suppliers. UI built so anyone on staff can use it in 10 seconds." expandedContent={<InventoryDetail/>}/>
-              <ServiceCard pill="06 · Lead scoring" title="Know who to call back first." viz={<VizLeadScoring/>} body="Every message across WhatsApp, IG and email lands in one inbox, scored by urgency and value. Your team focuses on the ones that actually convert."/>
+            <div style={{display:"grid", gridTemplateRows:"repeat(2,1fr)", gap:"20px"}}>
+              <ServiceCard n="03" accent="oklch(0.78 0.16 75)" spec={["Custom schema","Your data model","Fast"]} pill="03 · Management systems" title={<>ERPs, CRMs and back-office, <span className="serif-it">re-engineered</span>.</>} viz={<VizInventory/>} body="Custom AR, inventory, scheduling or workflow systems for when off-the-shelf software stops scaling with you. Built on your data model, not theirs — and finally fast." expandedContent={<InventoryDetail/>}/>
+              <ServiceCard n="04" accent="oklch(0.74 0.16 165)" spec={["Bidirectional","Idempotent","Observable"]} pill="04 · System integrations" title={<>Systems that <span className="serif-it">finally talk</span> to each other.</>} viz={<VizReceptionist/>} body="Bidirectional integrations between Salesforce, NetSuite, HubSpot, Stripe, Slack, your warehouse — anything with an API or a nightly CSV. Real-time, observable, and ours to debug." expandedContent={<ReceptionistDetail/>}/>
             </div>
           </div>
         )}
@@ -1660,8 +1610,14 @@ function Services() {
 /* ====================== CONTACT CARD ====================== */
 function ContactCard() {
   return (
-    <div className="surface relative flex flex-col justify-between overflow-hidden p-8 lg:p-10 h-full" style={{borderRadius:28}}>
-      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(80% 100% at 80% 0%, oklch(0.55 0.20 285 / 0.30) 0%, transparent 55%), radial-gradient(60% 80% at 0% 100%, oklch(0.62 0.18 220 / 0.18) 0%, transparent 55%)"}}></div>
+    <div className="surface relative flex flex-col justify-between overflow-hidden p-8 lg:p-10 h-full"
+         style={{
+           borderRadius:28,
+           "--card-accent": "oklch(0.72 0.22 285)",
+           borderColor: "rgba(139,125,255,0.22)",
+           boxShadow: "0 30px 80px -24px rgba(139,125,255,0.22), inset 0 1px 0 rgba(180,170,255,0.16)"
+         }}>
+      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(80% 100% at 80% 0%, oklch(0.55 0.20 285 / 0.45) 0%, transparent 55%), radial-gradient(60% 80% at 0% 100%, oklch(0.62 0.18 220 / 0.24) 0%, transparent 55%)"}}></div>
       <div className="relative flex flex-col justify-between h-full">
         <div>
           <span className="pill pill-violet mb-6 inline-flex items-center gap-2">
@@ -1669,10 +1625,12 @@ function ContactCard() {
             Let's talk
           </span>
           <h2 className="display-serif text-[clamp(32px,3.8vw,54px)] mt-6 text-[var(--bone)]">
-            Tell us <span className="serif-it" style={{color:"oklch(0.85 0.16 285)"}}>what's keeping you up</span>.
+            Tell us where the <span className="serif-it" style={{color:"oklch(0.85 0.16 285)"}}>spreadsheets are</span>.
           </h2>
           <p className="text-[15px] leading-[1.65] text-[var(--mute-2)] mt-6">
-            We reply within 24 hours — ironically, sometimes with help from one of our own systems.
+            Send a short note about the manual process, the off-the-shelf system that
+            stopped fitting, or the internal tool that's been on the roadmap for two years.
+            We'll reply within 24h with scope and timeline questions — not a sales pitch.
           </p>
           <div className="flex flex-col items-start gap-3 mt-8">
             <a href="mailto:hello@kova.studio" className="violet-btn">
@@ -1687,8 +1645,8 @@ function ContactCard() {
         </div>
         <div className="mt-10 pt-7 border-t border-white/10 grid grid-cols-2 gap-5">
           {[
-            ["Studio","Independent · Est. 2017"],
-            ["Industries","Hospitality · Retail · Services"],
+            ["Studio","Independent · Est. 2026"],
+            ["Sectors","Fintech · SaaS · Ops · E-commerce"],
             ["Slots","2 / 4 open · Q3"],
             ["Reply time","Under 24h"],
           ].map(([k,v],i)=>(
@@ -1705,8 +1663,12 @@ function ContactCard() {
 
 /* ====================== METRICS ====================== */
 function MetricCard({pill, prefix, value, unit, body, viz, highlight, equiv}) {
+  const highlightStyle = highlight ? {
+    borderColor: "rgba(139,125,255,0.22)",
+    boxShadow: "0 22px 60px -22px rgba(139,125,255,0.22), inset 0 1px 0 rgba(180,170,255,0.10)"
+  } : undefined;
   return (
-    <article className="surface p-8 lg:p-10 flex flex-col h-full">
+    <article className="surface p-8 lg:p-10 flex flex-col h-full" style={highlightStyle}>
       <div className="flex items-center justify-between mb-7">
         <span className={`pill ${highlight?"pill-violet":""}`}>
           {highlight && <span className="w-1.5 h-1.5 rounded-full bg-[var(--violet)] pulse-dot"></span>}
@@ -1735,25 +1697,25 @@ function Metrics() {
   const wide = useWide();
   const mid = useMid();
   return (
-    <section data-screen-label="03 Outcomes" className="relative px-8 lg:px-12 pt-12 pb-12">
+    <section data-screen-label="03 Outcomes" id="outcomes" className="relative px-8 lg:px-12 pt-12 pb-12">
       <div className="relative">
         {!mid ? (
           /* <900px: single column */
           <div className="flex flex-col gap-5">
-            <MetricCard pill="Time recovered" value="11" unit="h/wk" viz="per venue · avg" highlight equiv="$ 1,760 / mo in recovered labor" body="Weekly hours the owner stops spending taking orders, replying to messages and counting stock manually."/>
-            <MetricCard pill="Response time" prefix="<" value="30" unit="s" viz="AI · 24/7" equiv="vs. 4–6h avg without AI" body="The AI receptionist replies in under 30 seconds across every channel — even at 3am."/>
-            <MetricCard pill="Average ticket" prefix="+" value="22" unit="%" viz="vs. counter order" equiv="$ 4,800 / mo extra in a typical venue" body="Average ticket lift when customers self-order on the kiosk or web vs. ordering at the counter."/>
-            <MetricCard pill="Call coverage" value="100" unit="%" viz="AI · calls handled" equiv="0 missed calls — in English & Spanish" body="The AI Receptionist picks up every call, 24/7, in English and Spanish. No voicemail, no missed bookings."/>
+            <MetricCard pill="Engagement length" value="8" unit="wks" viz="median" highlight equiv="kickoff → production" body="Fixed-scope projects. Most engagements ship in 6–12 weeks, not 6 months. No infinite retainers."/>
+            <MetricCard pill="Code ownership" value="100" unit="%" viz="yours, documented" equiv="repo, cloud, deploy — all yours" body="No vendor lock-in. You own the source, the infrastructure account and the credentials from day one."/>
+            <MetricCard pill="Senior delivery" value="0" unit="juniors" viz="the engineer who scopes ships" equiv="no outsourced layers, ever" body="Every line of code is written by a senior with shipped production systems in the same domain as your engagement."/>
+            <MetricCard pill="Warranty" value="90" unit="days" viz="incidents ≤ 1 bday" equiv="post-launch coverage included" body="Production incidents acknowledged within one business day during the engagement and 90 days after handoff."/>
             <ContactCard/>
           </div>
         ) : !wide ? (
           /* 900–1399px: beam layout with smaller center gap */
           <div style={{display:"grid", gridTemplateColumns:"1fr clamp(60px,6vw,120px) 1fr", gap:"0 24px"}}>
             <div className="grid grid-cols-2 gap-5">
-              <MetricCard pill="Time recovered" value="11" unit="h/wk" viz="per venue · avg" highlight equiv="$ 1,760 / mo in recovered labor" body="Weekly hours the owner stops spending taking orders, replying to messages and counting stock manually."/>
-              <MetricCard pill="Response time" prefix="<" value="30" unit="s" viz="AI · 24/7" equiv="vs. 4–6h avg without AI" body="The AI receptionist replies in under 30 seconds across every channel — even at 3am."/>
-              <MetricCard pill="Average ticket" prefix="+" value="22" unit="%" viz="vs. counter order" equiv="$ 4,800 / mo extra in a typical venue" body="Average ticket lift when customers self-order on the kiosk or web vs. ordering at the counter."/>
-              <MetricCard pill="Call coverage" value="100" unit="%" viz="AI · calls handled" equiv="0 missed calls — in English & Spanish" body="The AI Receptionist picks up every call, 24/7, in English and Spanish. No voicemail, no missed bookings."/>
+              <MetricCard pill="Engagement length" value="8" unit="wks" viz="median" highlight equiv="kickoff → production" body="Fixed-scope projects. Most engagements ship in 6–12 weeks, not 6 months. No infinite retainers."/>
+              <MetricCard pill="Code ownership" value="100" unit="%" viz="yours, documented" equiv="repo, cloud, deploy — all yours" body="No vendor lock-in. You own the source, the infrastructure account and the credentials from day one."/>
+              <MetricCard pill="Senior delivery" value="0" unit="juniors" viz="the engineer who scopes ships" equiv="no outsourced layers, ever" body="Every line of code is written by a senior with shipped production systems in the same domain as your engagement."/>
+              <MetricCard pill="Warranty" value="90" unit="days" viz="incidents ≤ 1 bday" equiv="post-launch coverage included" body="Production incidents acknowledged within one business day during the engagement and 90 days after handoff."/>
             </div>
             <div/>
             <ContactCard/>
@@ -1762,10 +1724,10 @@ function Metrics() {
           /* ≥1400px: beam layout */
           <div style={{display:"grid", gridTemplateColumns:"1fr clamp(60px,8vw,160px) 1fr", gap:"24px"}}>
             <div className="grid grid-cols-2 gap-5">
-              <MetricCard pill="Time recovered" value="11" unit="h/wk" viz="per venue · avg" highlight equiv="$ 1,760 / mo in recovered labor" body="Weekly hours the owner stops spending taking orders, replying to messages and counting stock manually."/>
-              <MetricCard pill="Response time" prefix="<" value="30" unit="s" viz="AI · 24/7" equiv="vs. 4–6h avg without AI" body="The AI receptionist replies in under 30 seconds across every channel — even at 3am."/>
-              <MetricCard pill="Average ticket" prefix="+" value="22" unit="%" viz="vs. counter order" equiv="$ 4,800 / mo extra in a typical venue" body="Average ticket lift when customers self-order on the kiosk or web vs. ordering at the counter."/>
-              <MetricCard pill="Call coverage" value="100" unit="%" viz="AI · calls handled" equiv="0 missed calls — in English & Spanish" body="The AI Receptionist picks up every call, 24/7, in English and Spanish. No voicemail, no missed bookings."/>
+              <MetricCard pill="Engagement length" value="8" unit="wks" viz="median" highlight equiv="kickoff → production" body="Fixed-scope projects. Most engagements ship in 6–12 weeks, not 6 months. No infinite retainers."/>
+              <MetricCard pill="Code ownership" value="100" unit="%" viz="yours, documented" equiv="repo, cloud, deploy — all yours" body="No vendor lock-in. You own the source, the infrastructure account and the credentials from day one."/>
+              <MetricCard pill="Senior delivery" value="0" unit="juniors" viz="the engineer who scopes ships" equiv="no outsourced layers, ever" body="Every line of code is written by a senior with shipped production systems in the same domain as your engagement."/>
+              <MetricCard pill="Warranty" value="90" unit="days" viz="incidents ≤ 1 bday" equiv="post-launch coverage included" body="Production incidents acknowledged within one business day during the engagement and 90 days after handoff."/>
             </div>
             <div/>
             <ContactCard/>
@@ -1773,7 +1735,7 @@ function Metrics() {
         )}
       </div>
       <div className="flex items-center justify-between mt-7 px-2 text-[12px] text-[var(--mute)]">
-        <span>© 2026 Kova — Intelligent systems for modern businesses.</span>
+        <span>© 2026 Kova — Software studio for mid-market &amp; scale-ups.</span>
         <span className="font-mono tracking-[0.16em] uppercase">v.26.II</span>
       </div>
     </section>
